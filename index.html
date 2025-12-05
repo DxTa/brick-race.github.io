@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Brick Race - Retro Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #2a2a2a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+
+        .game-container {
+            background: #8b9a8b;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow:
+                0 0 0 4px #5a6a5a,
+                0 0 0 8px #3a4a3a,
+                0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #2a3a2a;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .game-screen {
+            background: #9aaa9a;
+            border: 4px solid #5a6a5a;
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 2px;
+            background: #8a9a8a;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .cell {
+            width: 22px;
+            height: 22px;
+            background: #a8b8a8;
+            border: 1px solid #98a898;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .cell::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            right: 3px;
+            bottom: 3px;
+            background: #b8c8b8;
+            border-radius: 1px;
+            opacity: 0.5;
+        }
+
+        .cell.active {
+            background: #1a2a1a;
+            border-color: #0a1a0a;
+            box-shadow:
+                inset 0 0 2px #3a4a3a,
+                0 0 4px rgba(0,0,0,0.3);
+        }
+
+        .cell.active::before {
+            background: #2a3a2a;
+            opacity: 1;
+        }
+
+        .cell.player {
+            background: #0a1a0a;
+            border-color: #000;
+        }
+
+        .cell.player::before {
+            background: #1a2a1a;
+            opacity: 1;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #7a8a7a, #5a6a5a);
+            border: 3px solid #4a5a4a;
+            color: #2a3a2a;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow:
+                0 4px 8px rgba(0,0,0,0.3),
+                inset 0 2px 4px rgba(255,255,255,0.2);
+            transition: transform 0.1s, box-shadow 0.1s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            box-shadow:
+                0 2px 4px rgba(0,0,0,0.3),
+                inset 0 1px 2px rgba(255,255,255,0.2);
+        }
+
+        .btn-start {
+            width: 80px;
+            height: 40px;
+            border-radius: 20px;
+            font-size: 12px;
+            background: linear-gradient(145deg, #c44, #a22);
+            border-color: #822;
+            color: #fff;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            padding: 10px;
+            background: #7a8a7a;
+            border-radius: 8px;
+        }
+
+        .info-item {
+            text-align: center;
+            color: #2a3a2a;
+        }
+
+        .info-label {
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .info-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .game-over-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .game-over-overlay.show {
+            display: flex;
+        }
+
+        .game-over-content {
+            background: #8b9a8b;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            color: #2a3a2a;
+            box-shadow: 0 0 0 4px #5a6a5a;
+        }
+
+        .game-over-content h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .game-over-content p {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .title {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #2a3a2a;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 1px 1px 0 #aabaa;
+        }
+
+        @media (max-width: 400px) {
+            .game-container {
+                padding: 15px;
+                border-radius: 15px;
+            }
+
+            .cell {
+                width: 18px;
+                height: 18px;
+            }
+
+            .btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="title">BRICK RACE</div>
+        <div class="game-screen">
+            <div class="grid-container" id="grid"></div>
+        </div>
+        <div class="game-info">
+            <div class="info-item">
+                <div class="info-label">SCORE</div>
+                <div class="info-value" id="score">0</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">LEVEL</div>
+                <div class="info-value" id="level">1</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">HIGH</div>
+                <div class="info-value" id="highscore">0</div>
+            </div>
+        </div>
+        <div class="controls">
+            <button class="btn" id="leftBtn">&#9664;</button>
+            <button class="btn btn-start" id="startBtn">START</button>
+            <button class="btn" id="rightBtn">&#9654;</button>
+        </div>
+    </div>
+
+    <div class="game-over-overlay" id="gameOverOverlay">
+        <div class="game-over-content">
+            <h2>GAME OVER</h2>
+            <p>Score: <span id="finalScore">0</span></p>
+            <button class="btn btn-start" id="restartBtn">RESTART</button>
+        </div>
+    </div>
+
+    <script>
+        // Game Constants
+        const GRID_COLS = 10;
+        const GRID_ROWS = 20;
+        const ROAD_LEFT = 2;
+        const ROAD_RIGHT = 7;
+        const LANES = [3, 4, 5, 6];
+
+        // Car shape (3x2 blocks)
+        const CAR_SHAPE = [
+            [0, 1, 0],
+            [1, 1, 1]
+        ];
+
+        // Game State
+        let grid = [];
+        let playerLane = 1; // 0-3 for 4 lanes
+        let obstacles = [];
+        let score = 0;
+        let level = 1;
+        let highScore = parseInt(localStorage.getItem('brickRaceHighScore')) || 0;
+        let gameRunning = false;
+        let gameLoop = null;
+        let moveCounter = 0;
+        let baseSpeed = 400;
+
+        // DOM Elements
+        const gridContainer = document.getElementById('grid');
+        const scoreDisplay = document.getElementById('score');
+        const levelDisplay = document.getElementById('level');
+        const highScoreDisplay = document.getElementById('highscore');
+        const startBtn = document.getElementById('startBtn');
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const restartBtn = document.getElementById('restartBtn');
+
+        // Initialize grid
+        function initGrid() {
+            gridContainer.innerHTML = '';
+            grid = [];
+
+            for (let row = 0; row < GRID_ROWS; row++) {
+                grid[row] = [];
+                for (let col = 0; col < GRID_COLS; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    gridContainer.appendChild(cell);
+                    grid[row][col] = cell;
+                }
+            }
+        }
+
+        // Clear all active cells
+        function clearGrid() {
+            for (let row = 0; row < GRID_ROWS; row++) {
+                for (let col = 0; col < GRID_COLS; col++) {
+                    grid[row][col].className = 'cell';
+                }
+            }
+        }
+
+        // Draw road boundaries
+        function drawRoad() {
+            for (let row = 0; row < GRID_ROWS; row++) {
+                // Left boundary
+                grid[row][ROAD_LEFT].classList.add('active');
+                // Right boundary
+                grid[row][ROAD_RIGHT].classList.add('active');
+            }
+        }
+
+        // Get player car position
+        function getPlayerPosition() {
+            const col = LANES[playerLane];
+            return { row: GRID_ROWS - 2, col: col };
+        }
+
+        // Draw player car
+        function drawPlayer() {
+            const pos = getPlayerPosition();
+
+            for (let r = 0; r < CAR_SHAPE.length; r++) {
+                for (let c = 0; c < CAR_SHAPE[r].length; c++) {
+                    if (CAR_SHAPE[r][c]) {
+                        const gridRow = pos.row + r;
+                        const gridCol = pos.col + c - 1;
+                        if (gridRow >= 0 && gridRow < GRID_ROWS &&
+                            gridCol >= 0 && gridCol < GRID_COLS) {
+                            grid[gridRow][gridCol].classList.add('player');
+                        }
+                    }
+                }
+            }
+        }
+
+        // Create new obstacle
+        function createObstacle() {
+            const lane = Math.floor(Math.random() * LANES.length);
+            return {
+                lane: lane,
+                row: -2
+            };
+        }
+
+        // Draw obstacles
+        function drawObstacles() {
+            obstacles.forEach(obs => {
+                const col = LANES[obs.lane];
+
+                for (let r = 0; r < CAR_SHAPE.length; r++) {
+                    for (let c = 0; c < CAR_SHAPE[r].length; c++) {
+                        if (CAR_SHAPE[r][c]) {
+                            const gridRow = obs.row + r;
+                            const gridCol = col + c - 1;
+                            if (gridRow >= 0 && gridRow < GRID_ROWS &&
+                                gridCol >= 0 && gridCol < GRID_COLS) {
+                                grid[gridRow][gridCol].classList.add('active');
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Check collision
+        function checkCollision() {
+            const playerPos = getPlayerPosition();
+
+            for (const obs of obstacles) {
+                if (obs.lane === playerLane) {
+                    // Check vertical overlap
+                    const obsTop = obs.row;
+                    const obsBottom = obs.row + 1;
+                    const playerTop = playerPos.row;
+                    const playerBottom = playerPos.row + 1;
+
+                    if (!(obsBottom < playerTop || obsTop > playerBottom)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Move player
+        function movePlayer(direction) {
+            if (!gameRunning) return;
+
+            if (direction === 'left' && playerLane > 0) {
+                playerLane--;
+            } else if (direction === 'right' && playerLane < LANES.length - 1) {
+                playerLane++;
+            }
+
+            render();
+        }
+
+        // Update game state
+        function update() {
+            moveCounter++;
+
+            // Move obstacles down
+            obstacles.forEach(obs => {
+                obs.row++;
+            });
+
+            // Remove off-screen obstacles and add score
+            const prevLength = obstacles.length;
+            obstacles = obstacles.filter(obs => obs.row < GRID_ROWS);
+            const removed = prevLength - obstacles.length;
+            score += removed * 10;
+
+            // Update level based on score
+            const newLevel = Math.floor(score / 100) + 1;
+            if (newLevel > level && newLevel <= 10) {
+                level = newLevel;
+            }
+
+            // Add new obstacles
+            if (moveCounter % 3 === 0) {
+                // Avoid spawning in same lane as recent obstacle
+                const recentLanes = obstacles
+                    .filter(o => o.row < 4)
+                    .map(o => o.lane);
+
+                let newObs = createObstacle();
+                let attempts = 0;
+                while (recentLanes.includes(newObs.lane) && attempts < 10) {
+                    newObs = createObstacle();
+                    attempts++;
+                }
+                obstacles.push(newObs);
+            }
+
+            // Check collision
+            if (checkCollision()) {
+                gameOver();
+                return;
+            }
+
+            render();
+            updateDisplay();
+        }
+
+        // Render game
+        function render() {
+            clearGrid();
+            drawRoad();
+            drawObstacles();
+            drawPlayer();
+        }
+
+        // Update score display
+        function updateDisplay() {
+            scoreDisplay.textContent = score;
+            levelDisplay.textContent = level;
+            highScoreDisplay.textContent = highScore;
+        }
+
+        // Calculate current speed
+        function getCurrentSpeed() {
+            return Math.max(baseSpeed - (level - 1) * 30, 100);
+        }
+
+        // Start game
+        function startGame() {
+            if (gameRunning) return;
+
+            // Reset state
+            playerLane = 1;
+            obstacles = [];
+            score = 0;
+            level = 1;
+            moveCounter = 0;
+            gameRunning = true;
+
+            startBtn.textContent = 'PAUSE';
+            gameOverOverlay.classList.remove('show');
+
+            render();
+            updateDisplay();
+
+            // Start game loop with dynamic speed
+            function tick() {
+                if (!gameRunning) return;
+                update();
+                gameLoop = setTimeout(tick, getCurrentSpeed());
+            }
+            tick();
+        }
+
+        // Pause game
+        function pauseGame() {
+            if (!gameRunning) return;
+
+            gameRunning = false;
+            clearTimeout(gameLoop);
+            startBtn.textContent = 'START';
+        }
+
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            clearTimeout(gameLoop);
+
+            // Update high score
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('brickRaceHighScore', highScore);
+            }
+
+            finalScoreDisplay.textContent = score;
+            gameOverOverlay.classList.add('show');
+            startBtn.textContent = 'START';
+            updateDisplay();
+        }
+
+        // Event Listeners
+        startBtn.addEventListener('click', () => {
+            if (gameRunning) {
+                pauseGame();
+            } else {
+                startGame();
+            }
+        });
+
+        restartBtn.addEventListener('click', () => {
+            gameOverOverlay.classList.remove('show');
+            startGame();
+        });
+
+        leftBtn.addEventListener('click', () => movePlayer('left'));
+        rightBtn.addEventListener('click', () => movePlayer('right'));
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    movePlayer('left');
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    movePlayer('right');
+                    break;
+                case ' ':
+                case 'Enter':
+                    if (gameOverOverlay.classList.contains('show')) {
+                        gameOverOverlay.classList.remove('show');
+                        startGame();
+                    } else if (gameRunning) {
+                        pauseGame();
+                    } else {
+                        startGame();
+                    }
+                    break;
+            }
+        });
+
+        // Touch controls for swipe
+        let touchStartX = null;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            if (touchStartX === null) return;
+
+            const touchEndX = e.changedTouches[0].clientX;
+            const diff = touchEndX - touchStartX;
+
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) {
+                    movePlayer('right');
+                } else {
+                    movePlayer('left');
+                }
+            }
+
+            touchStartX = null;
+        });
+
+        // Initialize
+        initGrid();
+        updateDisplay();
+
+        // Draw initial state
+        drawRoad();
+        drawPlayer();
+    </script>
+</body>
+</html>
